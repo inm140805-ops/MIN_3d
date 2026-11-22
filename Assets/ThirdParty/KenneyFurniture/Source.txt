@@ -1,0 +1,6 @@
+Kenney Furniture Kit 2.0
+https://kenney.nl/assets/furniture-kit
+License: CC0 (see License.txt)
+Imported cardboardBoxClosed.fbx and cardboardBoxOpen.fbx from the original archive.
+The Laundry Carton prefab adapts the original closed box with Unity URP materials,
+garment-sized proportions and a pixel-font waybill.

@@ -1,0 +1,70 @@
+세탁소 개선 방향 — 2026-11-16
+
+유지하는 정체성
+  1인칭으로 손님의 말에서 옷의 용도를 추론하고, 직접 옷장으로 이동해 골라 전달하는 작은 세탁소.
+  E 한 키 상호작용, 기존 고객/옷/아이콘/거리/건물 배치와 기본 NavMesh 동선은 유지.
+  신규 건물 제작, 건물 배치, 대규모 모델링, ML 학습, 자동 빌드는 범위에서 제외.
+
+초기 관찰
+  강점: 손님별 상황과 옷 선택의 연결, 실제로 걷고 전달하는 공간감, 스타일이 맞는 기존 도시/인물 자산.
+  큰 문제5개:
+    1. 주문을 읽고 옷장으로 이동하면 요청을 기억해야 함. 다음 행동 안내 부족.
+    2. 보상 텍스트가 너무 작고 상호작용 아이콘은 너무 큼. 피드백 위계가 뒤집힘.
+    3. 인내 종료/하루 종료/재시작에서 중복 처리와 예측하기 어려운 시간/목표 변화.
+    4. 일시정지와 결과 화면 중 플레이어 입력이 새어 나감. 마우스 회전이 프레임 시간에 의존.
+    5. 비활성 Animator 호출 경고가 대량 발생하고 UI/옷장 갱신에 불필요한 반복 연산이 있음.
+
+설계
+  P1: 읽은 주문을 왼쪽 티켓에 유지, 들고 있는 옷을 이름+아이콘으로 표시.
+  P1: 1일차30000원/3분, 주문당5000원 유지. 성공 시 다음 날+5000원, 실패 시 같은 날 재도전.
+      목표는75000원 상한. 첫날6주문은 설계 가설이며 전체 하루 플레이 통과 전 밸런스 확정 아님.
+  P1: 종료/보상 처리1회, 일시정지/결과 입력 차단, 중력 속도 보존, 회전량의 프레임 의존 제거.
+  P2: 읽기 쉬운 매출/시간/날짜 카드, 목표 진행 막대, 마지막30초 글자 경고.
+  P2: 금색 그라데이션 +5,000 빌보드 상승/축소/페이드, 짧은 성공음과8개 작은 입자.
+  P2: 기존 메뉴/슬라이더/가이드의 콜백을 유지하면서 시각 스타일 통일, 실패 재도전 버튼 제공.
+  P3: 중복 물리 조회/배열 생성, per-frame 로그/외형 적용/미사용 경로 탐색 제거.
+
+아트 기준
+  스타일: 밝고 차분한 동네 세탁소. 기존 로우폴리 도시를 배경으로 작은 민트/종이색 UI.
+  Ink #263543, Paper #F9F5E6, Mint #479F91, Gold #F1B548, Coral #BA4949.
+  민트=행동/소지품, 금색=수익/목표 달성, 코랄=시간 경고. 색과 함께 반드시 텍스트 표시.
+  기존 Paperlogy 한글 폰트 재사용. HUD 본문20~28, 주요 숫자40~46 (1920x1080 기준).
+  둥근 카드/충분한 여백/한 화면의 주정보3개. 강한 그림자와 과한 외곽선은 제거.
+  월드 프롬프트는720p 기준48px로 근접 시 크기 제한. 주문/기분 표시에는 별도 상한.
+  조명은 따뜻한 주광+차가운 하늘/중립 벽면. 기존 URP Bloom.25와Neutral 톤매핑 유지.
+  인물/건물 재질은 근거 없이 전면 교체하지 않음. 화면 흔들림/모션블러 추가 안 함.
+  획득음90ms, 전달음160ms, 보상 팝업1.15초. 게임플레이를 가리지 않는 짧은 피드백.
+
+유사 게임에서 가져온 원칙 (해당 게임들을 이 세션에서 직접 플레이했다는 뜻은 아님)
+  Overcooked: 제한 시간 속 주문→준비→서빙과 명확한 완료 피드백. 협동/복잡한 조리 단계는 복제하지 않음.
+    https://www.team17.com/games/overcooked
+  PlateUp!: 적은 버튼으로 운영하고 반복 영업에서 난이도를 축적. 일관된 하루 규칙과 점진적 목표로 적용.
+    https://www.plateupgame.com/presskit/
+  Good Pizza, Great Pizza: 손님마다 다른 말과 요청, 수익으로 운영 성과를 확인. 읽은 요청 유지와 즉시 매출 표시로 적용.
+    https://www.goodpizzagreatpizza.com/
+
+디자인 근거
+  Order fulfillment 게임 분석(Treanor/Nelson, FDG2019): 요청/자원 선택/전달/시간 압박의 루프를 개선 단위로 삼음.
+    https://www.kmjn.org/publications/OrderFulfillment_FDG19.pdf
+  Game Accessibility Guidelines: 색만으로 필수 정보 전달하지 않기. 경고 문구/옷 이름/수치를 병행.
+    https://gameaccessibilityguidelines.com/ensure-no-essential-information-is-conveyed-by-a-fixed-colour-alone/
+  W3C status feedback pattern: 입력 결과를 빠르고 분명하게 알리기. 오배송 이유/획득/완료 피드백 적용.
+    https://www.w3.org/WAI/WCAG2/supplemental/patterns/o4p10-status-feedback/
+
+Unity 구현 근거
+  가상 장치 이벤트: https://docs.unity3d.com/Packages/com.unity.inputsystem@1.13/manual/Events.html
+  입력 테스트: https://docs.unity3d.com/Packages/com.unity.inputsystem@1.13/manual/Testing.html
+  프레임 종료 캡처: https://docs.unity3d.com/6000.0/Documentation/ScriptReference/ScreenCapture.CaptureScreenshotAsTexture.html
+  시간 배율: https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Time-timeScale.html
+  사용하지 않는 메모리 자산 해제: https://docs.unity3d.com/6000.0/Documentation/ScriptReference/Resources.UnloadUnusedAssets.html
+
+평가 원칙
+  직접 보지 않은 영역에는 점수를 만들지 않음. 이미지/입력 assertion/단위검사/성능 지표를 구분.
+  실제 인간의 재미, 장시간 재플레이, 빌드 성능은 자동 입력 봇 통과로 대신하지 않음.
+  30fps 제한 테스트의 FPS는 출시 성능 벤치마크가 아님. 도구 실행/캡처로 인한 스톨을 함께 기록.
+
+2026-11-22 user-directed visual acceptance criteria
+Use frontend-design principles within the established bright pixel / retro Windows laundry shop direction.
+Palette: desktop gray #C0C0C0, paper #FFFFFF, ink #000000, selection navy #000080, machine teal #355F5A. Galmuri pixel lettering; readable text hierarchy; align panels below the main HUD.
+Before accepting authored models, inspect real game-distance views for coplanar faces/shimmer, implausible construction, arbitrary ornament or repeated generic forms. Compare against functional real-object structure, then revise the weakest visible detail. The final candidate must be the best supported by the inspected evidence, not merely the first generated version.
+Verified repairs: truck floor fits inside side walls, roof has a small overhang, rear panel has clearance; text stays within physical labels; first-person camera pitches around eye height instead of orbiting from the feet.

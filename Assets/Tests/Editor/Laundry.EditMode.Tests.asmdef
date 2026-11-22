@@ -1,0 +1,6 @@
+{
+  "name": "Laundry.EditMode.Tests",
+  "references": ["Unity.TextMeshPro"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"]
+}
